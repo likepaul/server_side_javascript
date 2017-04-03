@@ -1,0 +1,21 @@
+doctype html
+html
+  head
+    title edit form
+    meta(charset='utf-8')
+  body
+    h1
+      a(href='/topic') Server side javascript
+    ul
+      each topic in topics
+        li
+          - var rid = encodeURIComponent(topic['id']);
+          a(href='/topic/'+rid)= topic.title
+    article
+      h1= 'Delete? Really? ' + topic.title
+
+    - var rid = encodeURIComponent(topic['id']);
+    form(action='/topic/'+rid+'/delete' method='post')
+        p
+          input(type='submit' name='confirm' value='YES')
+          input(type='submit' name='confirm' value='NO')

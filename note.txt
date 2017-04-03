@@ -1,0 +1,36 @@
+javascript built-in library - 어떤 javascript host 환경에서도 사용할 수 있다.
+javascript host library - 해당 호스트 환경에서만 사용할 수 있다.
+jquery는 web browser, javascript host 환경에서 사용할 수 있는 라이브러리
+
+타인의 모듈을 사용하는 방법
+npm nodejs package manager.
+다른 개발을 할 때에도, npm을 사용할 수 있다.
+prototype based programming
+functional programming
+
+function안에 있는 this는 outer object를 의미한다.
+
+this. 소속 객체를 의미한다.
+function안에 있는 this, 이 function이 소속된 객체.
+생성자안에 있는 this, 이 생성자가 소속된 객체. 즉, 생성자가 생성한 객체.
+
+tiny: 1byte
+small: 2byte
+medium: 3byte
+long/big: 4byte
+
+TINYTEXT 255, TINYINT() 0~255, -128~127
+TEXT/BLOB 65536, SMALLINT() 0~65535, -32768~32767
+MEDIUMTEXT/MEDIUMBLOB, MEDIUMINT()
+LONGTEXT,LONGBLOB, INT()
+BIGINT()
+FLOAT()
+DOUBLE()
+DEMICAL()
+
+== index ==
+primary 중복불가/가장고속/단일컬럼; primary key(`컬럼`)
+normal 중복허용/저속/복수컬럼; key `키이름` (`컬럼`)
+unique 중복불가/고속/복수컬럼; unique key `키이름` (`컬럼`)
+foreign
+fulltext

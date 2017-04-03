@@ -1,0 +1,31 @@
+doctype html
+html
+  head
+    title view
+    meta(charset='utf-8')
+  body
+    h1
+      a(href='/topic') Server side javascript
+    ul
+      each topic in topics
+        li
+          - var rid = encodeURIComponent(topic['id']);
+          a(href='/topic/'+rid)= topic.title
+    article
+      if topic
+        h2= topic.title
+        = topic.description
+        if topic.author
+          div= 'by '+topic.author
+      else
+        h2 Welcome
+        | This is server side javaScript tutorial.
+    ul
+      li
+        a(href='/topic/add') add
+      if topic
+        - var rid = encodeURIComponent(topic['id'])
+        li
+          a(href='/topic/'+rid+'/edit') edit
+        li
+          a(href='/topic/' + rid +'/delete') delete

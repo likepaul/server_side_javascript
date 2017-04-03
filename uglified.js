@@ -1,0 +1,1 @@
+function hello(o){console.log("Hi, "+o);console.log("1")}hello("prgmaker");

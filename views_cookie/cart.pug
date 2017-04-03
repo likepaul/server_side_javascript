@@ -1,0 +1,13 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    title Carts
+  body
+    h1 Carts
+    ul
+      - for(var key in carts)
+        - id = encodeURIComponent(key);
+        li #{carts[key].title} (#{carts[key].count}) #[a(href='/cart/'+id+'/delete') delete] #[a(href='/cart/'+id) add]
+
+    a(href='/products') Product List

@@ -1,0 +1,11 @@
+get('topic/'): view.pug
+get('topic/:id'): view.pug
+get('topic/add'): add.pug
+  post('topic/add')
+  get('topic/:id')
+get('topic/:id/edit'): edit.pug
+  post('topic/:id/edit')
+  get('topic/:id')
+get('topic/:id/delete'): delete.pug
+  post('topic/:id/delete')
+  get('topic/')

@@ -1,0 +1,24 @@
+doctype html
+html
+  head
+    title edit form
+    meta(charset='utf-8')
+  body
+    h1
+      a(href='/topic') Server side javascript
+    ul
+      each topic in topics
+        li
+          - var rid = encodeURIComponent(topic['id']);
+          a(href='/topic/'+rid)= topic.title
+    - var rid = encodeURIComponent(topic['id']);
+    form(action='/topic/'+rid+'/edit' method='post')
+      p
+        input(type='text' name='title' placeholder='title' value=topic.title)
+      p
+        textarea(name='description' placeholder='description')
+          = topic.description
+      p
+        input(type='text' name='author' placeholder='author' value=topic.author)
+      p
+        input(type='submit')
