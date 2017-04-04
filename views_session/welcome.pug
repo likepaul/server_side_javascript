@@ -4,8 +4,8 @@ html
     meat(charset='utf-8')
     title Welcome
   html
-    if displayName && uname
-      h1 Hello, #{displayName}(#{uname})
+    if displayName
+      h1 Hello, #{displayName}
       a(href='/auth/logout') logout
     else
       h1 welcome

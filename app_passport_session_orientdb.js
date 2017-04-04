@@ -7,7 +7,17 @@ var OrientDB = require('orientjs');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 var FacebookStrategy = require('passport-facebook').Strategy;
+var log4js = require('log4js');
+
 var app = express();
+log4js.configure({
+  appenders: [
+    { type: 'console'},
+    { type: 'file', filename: 'logs/server.log', category: 'server'}
+  ]
+});
+var logger = log4js.getLogger('server');
+
 
 var server = OrientDB({
   host: 'localhost',
@@ -26,6 +36,7 @@ app.set('views', 'views_session');
 app.set('view engine', 'pug');
 
 app.use(urlEncodedParser);
+
 app.use(session({
   secret: 'jakdsf89_8)DF$#Jlkj@#kjfsB%^S',
   resave: false,
@@ -55,8 +66,7 @@ app.get('/tmp', (req, res) => {
 app.get('/welcome', (req, res) => {
   res.render('welcome',
     req.user ? {
-      displayName: req.user.displayName,
-      uname: req.user.uname
+      displayName: (req.user.displayName || req.user.uname) + (req.user.email ? '(' + req.user.email + ')' : '')
     } : {});
 });
 
@@ -72,12 +82,24 @@ User.findByUserName = function(username, observer) {
   });
 }
 
-User.addUser = function(username, password, displayName, observer) {
-  var sql = 'INSERT INTO users (`uname`, `password`, `displayName`) values (:uname, :password, :displayName)';
+User.findByAuthId = function(authId, observer) {
+  var sql = 'SELECT FROM `users` WHERE `authId`=:authId';
   db.query(sql, {
     params: {
+      authId: authId
+    }
+  }).then((results) => {
+    observer(results);
+  });
+}
+
+User.addUser = function(authId, username, hash, displayName, observer) {
+  var sql = 'INSERT INTO users (`authId`, `uname`, `password`, `displayName`) values (:authId, :uname, :password, :displayName)';
+  db.query(sql, {
+    params: {
+      authId: authId,
       uname: username,
-      password: md5(password),
+      password: hash,
       displayName: displayName
     }
   }).then((results) => {
@@ -91,19 +113,24 @@ passport.serializeUser(function(user, done) {
   // to req.session.passport.user
   done(null, {
     type: 'serialize',
+    authId: user.authId,
     uname: user.uname,
-    displayName: user.displayName
+    displayName: user.displayName,
+    email: user.email
   });
 });
 
 passport.deserializeUser(function(user, done) {
-  User.findByUserName(user.uname, (results) => {
+  console.log('deserialize', user);
+  User.findByAuthId(user.authId, (results) => {
     if (results.length > 0) {
       // to req.user
       done(null, {
         type: 'desrialize',
+        authId: results[0].authId,
         uname: results[0].uname,
-        displayName: results[0].displayName
+        displayName: results[0].displayName,
+        email: user.email
       });
     } else {
       done(null, false);
@@ -113,12 +140,15 @@ passport.deserializeUser(function(user, done) {
 
 passport.use(new LocalStrategy(
   function(username, password, done) {
-    User.findByUserName(username, (results) => {
+    User.findByAuthId('local:'+username, (results) => {
+
+
       if (results.length == 0) {
         return done(null, false, {
           message: 'Incorrect username.'
         })
       } else if (results[0].password === md5(password)) {
+
         return done(null, results[0]);
       } else {
         return done(null, false, {
@@ -153,6 +183,7 @@ app.get('/auth/logout', (req, res) => {
 
 app.post('/auth/register', urlEncodedParser, (req, res) => {
   var user = {
+    authId: 'local:' + req.body.username,
     uname: req.body.username,
     password: req.body.password,
     displayName: req.body.displayName
@@ -167,6 +198,7 @@ app.post('/auth/register', urlEncodedParser, (req, res) => {
     });
     return;
   }
+
   pattern = /^\w{8,14}$/;
   if (!user.password || !pattern.test(user.password)) {
     delete user.password;
@@ -177,7 +209,7 @@ app.post('/auth/register', urlEncodedParser, (req, res) => {
     return;
   }
 
-  User.addUser(user.uname, user.password, user.displayName, (results) => {
+  User.addUser(user.authId, user.uname, md5(user.password), user.displayName, (results) => {
     if(Array.isArray(results)) {
       req.login(user, (err) => {
         if(err) {
@@ -205,10 +237,21 @@ app.post('/auth/register', urlEncodedParser, (req, res) => {
 passport.use(new FacebookStrategy({
     clientID: '1879987988938378',
     clientSecret: 'ea60f62589386b13d78f96f6a1e07768',
-    callbackURL: '/auth/facebook/callback'
+    callbackURL: '/auth/facebook/callback',
+    profileFields: ['email', 'displayName']
   },
   function(accessToken, refreshToken, profile, done) {
-
+    console.log(profile);
+    var user = {authId: 'facebook:' + profile.id, uname: profile.id, displayName: profile.displayName, email: profile.emails[0].value};
+    User.findByAuthId(user.authId, function(results) {
+      if(Array.isArray(results) && results.length > 0) {
+        done(null, user);
+      } else {
+        User.addUser(user.authId, user.uname, md5(user.uname), profile.displayName, (results) => {
+          done(null, user);
+        });
+      }
+    });
   }
 ));
 
@@ -220,7 +263,7 @@ app.get('/auth/facebook/callback',
 
 
 app.get('/auth/facebook',
-  passport.authenticate('facebook')
+  passport.authenticate('facebook',{scope: 'email'})
 );
 
 app.get('/auth/register', (req, res) => {
@@ -229,5 +272,6 @@ app.get('/auth/register', (req, res) => {
 
 
 app.listen(3004, () => {
-  console.log("Listening 3004");
+  // console.log('Listening 3004');
+  logger.debug('Listening 3004');
 });
