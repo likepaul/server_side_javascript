@@ -1,0 +1,14 @@
+extends ../layout
+block content
+  h1 Login
+  div.err= errmsg
+  form(action='/auth/login' method='post')
+    p
+      input(type='text' name='username' placeholder='user name' autofocus='true')
+    p
+      input(type='password' name='password' placeholder='password')
+    p
+      input(type='submit' value='login')
+    ul
+      li
+        a(href='/auth/facebook') facebook

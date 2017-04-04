@@ -1,0 +1,16 @@
+doctype html
+html
+  head
+    meat(charset='utf-8')
+    title Welcome
+  html
+    if displayName
+      h1 Hello, #{displayName}
+      a(href='/auth/logout') logout
+    else
+      h1 welcome
+      ul
+        li
+          a(href='/auth/login') login
+        li
+          a(href='/auth/register') register

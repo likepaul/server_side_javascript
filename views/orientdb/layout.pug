@@ -1,0 +1,22 @@
+doctype html
+html
+  head
+    title new form
+    meta(charset='utf-8')
+  body
+    if !user
+      ul#account
+        li
+          a(href='/auth/login') login
+        li
+          a(href='/auth/register') register
+    else
+      a(href='/auth/logout') logout (#{user.displayName})
+    h1
+      a(href='/topic') Server side javascript
+    ul
+      each topic in topics
+        li
+          - var rid = encodeURIComponent(topic['@rid']);
+          a(href='/topic/'+rid)= topic.title
+    block content
