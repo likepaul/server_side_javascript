@@ -6,7 +6,7 @@ var md5 = require('md5');
 var OrientDB = require('orientjs');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
-
+var FacebookStrategy = require('passport-facebook').Strategy;
 var app = express();
 
 var server = OrientDB({
@@ -53,37 +53,58 @@ app.get('/tmp', (req, res) => {
 });
 
 app.get('/welcome', (req, res) => {
-  console.log('req.user', req.user);
-  console.log('req.session.passport', req.session.passport);
   res.render('welcome',
-  req.user ? {
+    req.user ? {
       displayName: req.user.displayName,
       uname: req.user.uname
     } : {});
 });
 
 function User() {}
-User.findByUserName = function(username, transmit) {
+User.findByUserName = function(username, observer) {
   var sql = 'SELECT FROM `users` WHERE `uname`=:uname';
   db.query(sql, {
     params: {
       uname: username
     }
   }).then((results) => {
-    transmit(results);
+    observer(results);
   });
 }
 
-passport.serializeUser(function(user, done){
+User.addUser = function(username, password, displayName, observer) {
+  var sql = 'INSERT INTO users (`uname`, `password`, `displayName`) values (:uname, :password, :displayName)';
+  db.query(sql, {
+    params: {
+      uname: username,
+      password: md5(password),
+      displayName: displayName
+    }
+  }).then((results) => {
+    observer(results);
+  }).catch((error) => {
+    observer(error);
+  });
+}
+
+passport.serializeUser(function(user, done) {
   // to req.session.passport.user
-  done(null, {type: 'serialize', uname: user.uname, displayName: user.displayName});
+  done(null, {
+    type: 'serialize',
+    uname: user.uname,
+    displayName: user.displayName
+  });
 });
 
-passport.deserializeUser(function(user, done){
+passport.deserializeUser(function(user, done) {
   User.findByUserName(user.uname, (results) => {
-    if(results.length > 0) {
+    if (results.length > 0) {
       // to req.user
-      done(null, {type: 'desrialize', uname: results[0].uname, displayName: results[0].displayName});
+      done(null, {
+        type: 'desrialize',
+        uname: results[0].uname,
+        displayName: results[0].displayName
+      });
     } else {
       done(null, false);
     }
@@ -92,22 +113,18 @@ passport.deserializeUser(function(user, done){
 
 passport.use(new LocalStrategy(
   function(username, password, done) {
-      var sql = 'SELECT FROM `users` WHERE `uname`=:uname';
-      db.query(sql, {
-        params: {
-          uname: username
-        }
-      }).then((results) => {
-        if(results.length == 0) {
-          console.log('Incorrect username.');
-          return done(null, false, {message: 'Incorrect username.'})
-        } else if(results[0].password === md5(password)) {
-          console.log('Matched', results[0]);
-          return done(null, results[0]);
-        } else {
-          console.log('Incorrect password', results[0].password);
-          return done(null, false, {message: 'Incorrect password.'})
-        }
+    User.findByUserName(username, (results) => {
+      if (results.length == 0) {
+        return done(null, false, {
+          message: 'Incorrect username.'
+        })
+      } else if (results[0].password === md5(password)) {
+        return done(null, results[0]);
+      } else {
+        return done(null, false, {
+          message: 'Incorrect password.'
+        })
+      }
     });
   }
 ));
@@ -160,32 +177,56 @@ app.post('/auth/register', urlEncodedParser, (req, res) => {
     return;
   }
 
-  var sql = 'INSERT INTO users (`uname`, `password`, `displayName`) values (:uname, :password, :displayName)';
-  db.query(sql, {
-    params: {
-      uname: user.uname,
-      password: md5(user.password),
-      displayName: user.displayName
-    }
-  }).then((results) => {
-    // res.redirect('/welcome');
-    req.login(user, (err) => {
-      req.session.save(() => {
-        res.redirect('/welcome');
+  User.addUser(user.uname, user.password, user.displayName, (results) => {
+    if(Array.isArray(results)) {
+      req.login(user, (err) => {
+        if(err) {
+          delete user.password;
+          res.render('register', {
+            errmsg: error.message,
+            user: user
+          });
+        } else {
+          req.session.save(() => {
+            res.redirect('/welcome');
+          });
+        }
       });
-    });
-  }).catch((error) => {
-    delete user.password;
-    res.render('register', {
-      errmsg: error.message,
-      user: user
-    });
+    } else {
+      delete user.password;
+      res.render('register', {
+        errmsg: results.message,
+        user: user
+      });
+    }
   });
 });
+
+passport.use(new FacebookStrategy({
+    clientID: '1879987988938378',
+    clientSecret: 'ea60f62589386b13d78f96f6a1e07768',
+    callbackURL: '/auth/facebook/callback'
+  },
+  function(accessToken, refreshToken, profile, done) {
+
+  }
+));
+
+app.get('/auth/facebook/callback',
+  passport.authenticate('facebook', {
+    successRedirect: '/welcome',
+    failureRedirect: '/auth/login'
+  }));
+
+
+app.get('/auth/facebook',
+  passport.authenticate('facebook')
+);
 
 app.get('/auth/register', (req, res) => {
   res.render('register');
 });
+
 
 app.listen(3004, () => {
   console.log("Listening 3004");
