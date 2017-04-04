@@ -12,12 +12,13 @@ var pbkdf2Password = require('pbkdf2-password');
 var hasher = pbkdf2Password();
 
 // NOTE: log4js configuration
-log4js.configure({
-  appenders: [
-    { type: 'console'},
-    { type: 'file', filename: 'logs/server.log', category: 'server'}
-  ]
-});
+// log4js.configure({
+//   appenders: [
+//     { type: 'console'},
+//     { type: 'file', filename: 'logs/server.log', category: 'server'}
+//   ]
+// });
+log4js.configure('./log4js_configuration.json', {reloadSecs: 300});
 var logger = log4js.getLogger('server');
 
 // NOTE: express configuration
