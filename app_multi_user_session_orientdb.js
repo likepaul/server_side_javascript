@@ -11,6 +11,7 @@ var server = OrientDB({
   password: 'Supper@Lotto949'
 })
 var db = server.use('o2');
+var salt = 'fjsadlkjflakjsf4434$%$@525';
 
 var app = express();
 var urlEncodedParser = bodyParser.urlencoded({

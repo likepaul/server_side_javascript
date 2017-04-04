@@ -9,7 +9,7 @@ var LocalStrategy = require('passport-local').Strategy;
 var FacebookStrategy = require('passport-facebook').Strategy;
 var log4js = require('log4js');
 
-var app = express();
+// NOTE: log4js configuration
 log4js.configure({
   appenders: [
     { type: 'console'},
@@ -18,25 +18,21 @@ log4js.configure({
 });
 var logger = log4js.getLogger('server');
 
+// NOTE: express configuration
+var app = express();
 
-var server = OrientDB({
-  host: 'localhost',
-  port: '2424',
-  user: 'root',
-  password: 'Supper@Lotto949'
-})
-var db = server.use('o2');
-
+// NOTE: body parser configuration
 var urlEncodedParser = bodyParser.urlencoded({
   extended: false
 });
+app.use(urlEncodedParser);
 
+// NOTE: pug template configuration
 app.locals.pretty = true;
 app.set('views', 'views_session');
 app.set('view engine', 'pug');
 
-app.use(urlEncodedParser);
-
+// NOTE: session configuration
 app.use(session({
   secret: 'jakdsf89_8)DF$#Jlkj@#kjfsB%^S',
   resave: false,
@@ -46,8 +42,18 @@ app.use(session({
   })
 }));
 
+// NOTE: passport configuration
 app.use(passport.initialize());
 app.use(passport.session());
+
+// NOTE: orientd db configuration
+var server = OrientDB({
+  host: 'localhost',
+  port: '2424',
+  user: 'root',
+  password: 'Supper@Lotto949'
+})
+var db = server.use('o2');
 
 app.get('/count', (req, res) => {
   if (req.session.count) {
