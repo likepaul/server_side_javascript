@@ -8,6 +8,8 @@ var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 var FacebookStrategy = require('passport-facebook').Strategy;
 var log4js = require('log4js');
+var pbkdf2Password = require('pbkdf2-password');
+var hasher = pbkdf2Password();
 
 // NOTE: log4js configuration
 log4js.configure({
@@ -70,6 +72,7 @@ app.get('/tmp', (req, res) => {
 });
 
 app.get('/welcome', (req, res) => {
+  console.log(req.user);
   res.render('welcome',
     req.user ? {
       displayName: (req.user.displayName || req.user.uname) + (req.user.email ? '(' + req.user.email + ')' : '')
@@ -99,13 +102,14 @@ User.findByAuthId = function(authId, observer) {
   });
 }
 
-User.addUser = function(authId, username, hash, displayName, observer) {
-  var sql = 'INSERT INTO users (`authId`, `uname`, `password`, `displayName`) values (:authId, :uname, :password, :displayName)';
+User.addUser = function(authId, username, hash, salt, displayName, observer) {
+  var sql = 'INSERT INTO users (`authId`, `uname`, `password`, `salt`, `displayName`) values (:authId, :uname, :password, :salt, :displayName)';
   db.query(sql, {
     params: {
       authId: authId,
       uname: username,
       password: hash,
+      salt: salt,
       displayName: displayName
     }
   }).then((results) => {
@@ -147,18 +151,19 @@ passport.deserializeUser(function(user, done) {
 passport.use(new LocalStrategy(
   function(username, password, done) {
     User.findByAuthId('local:'+username, (results) => {
-
-
       if (results.length == 0) {
         return done(null, false, {
           message: 'Incorrect username.'
         })
-      } else if (results[0].password === md5(password)) {
-
-        return done(null, results[0]);
       } else {
-        return done(null, false, {
-          message: 'Incorrect password.'
+        hasher({password: password, salt: results[0].salt}, (err, password, salt, hash) => {
+          if(hash === results[0].password) {
+            return done(null, results[0]);
+          } else {
+            return done(null, false, {
+              message: 'Incorrect password.'
+            })
+          }
         })
       }
     });
@@ -215,28 +220,30 @@ app.post('/auth/register', urlEncodedParser, (req, res) => {
     return;
   }
 
-  User.addUser(user.authId, user.uname, md5(user.password), user.displayName, (results) => {
-    if(Array.isArray(results)) {
-      req.login(user, (err) => {
-        if(err) {
-          delete user.password;
-          res.render('register', {
-            errmsg: error.message,
-            user: user
-          });
-        } else {
-          req.session.save(() => {
-            res.redirect('/welcome');
-          });
-        }
-      });
-    } else {
-      delete user.password;
-      res.render('register', {
-        errmsg: results.message,
-        user: user
-      });
-    }
+  hasher({password:user.password}, (err, pass, salt, hash) => {
+    User.addUser(user.authId, user.uname, hash, salt, user.displayName, (results) => {
+      if(Array.isArray(results)) {
+        req.login(user, (err) => {
+          if(err) {
+            delete user.password;
+            res.render('register', {
+              errmsg: error.message,
+              user: user
+            });
+          } else {
+            req.session.save(() => {
+              res.redirect('/welcome');
+            });
+          }
+        });
+      } else {
+        delete user.password;
+        res.render('register', {
+          errmsg: results.message,
+          user: user
+        });
+      }
+    });
   });
 });
 
@@ -247,13 +254,13 @@ passport.use(new FacebookStrategy({
     profileFields: ['email', 'displayName']
   },
   function(accessToken, refreshToken, profile, done) {
-    console.log(profile);
+    console.log('facebook', profile);
     var user = {authId: 'facebook:' + profile.id, uname: profile.id, displayName: profile.displayName, email: profile.emails[0].value};
     User.findByAuthId(user.authId, function(results) {
       if(Array.isArray(results) && results.length > 0) {
         done(null, user);
       } else {
-        User.addUser(user.authId, user.uname, md5(user.uname), profile.displayName, (results) => {
+        User.addUser(user.authId, user.uname, '', '', profile.displayName, (results) => {
           done(null, user);
         });
       }
