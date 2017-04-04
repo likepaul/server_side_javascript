@@ -64,26 +64,6 @@ typings/
 /sessions/
 *.swp
 /session-store.db
-A
-A
-A
-A
-A
-A
-A
-A
-A
-A
-A
-B
-B
-B
-B
-B
-B
-B
-B
-B
-
+/package.json
 
 # End of https://www.gitignore.io/api/node
