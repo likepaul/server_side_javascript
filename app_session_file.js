@@ -27,8 +27,7 @@ app.get('/count', (req, res) => {
   } else {
     req.session.count = 1;
   }
-
-  res.send('hi session');
+  res.send('Increse session count.');
 });
 
 app.get('/tmp', (req, res) => {
