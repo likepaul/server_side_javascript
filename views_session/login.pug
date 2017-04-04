@@ -5,8 +5,7 @@ html
     title login
   html
     h1 Login
-    if errmsg
-      div= errmsg
+    div.err= errmsg
     form(action='/auth/login' method='post')
       p
         input(type='text' name='username' placeholder='user name' autofocus='true')
