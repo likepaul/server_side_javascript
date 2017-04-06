@@ -1,0 +1,18 @@
+doctype html
+html
+  head
+    meat(charset='utf-8')
+    title Register
+  html
+    h1 Register
+    if errmsg
+      div= errmsg
+    form(action='/auth/register' method='post')
+      p
+        input(type='text' name='username' placeholder='user name' autofocus='true' value=(user && user.uname ? user.uname : ''))
+      p
+        input(type='password' name='password' placeholder='password' value=(user && user.password ? user.password : ''))
+      p
+        input(type='text' name='displayName' placeholder='display name' value=(user && user.displayName ? user.displayName : ''))
+      p
+        input(type='submit' value='register')

@@ -18,7 +18,8 @@ module.exports = function(logger) {
     saveUninitialized: true,
     store: new OrientoStore({
       server: "host=localhost&port=2424&username=root&password=Supper@Lotto949&db=o2"
-    })
+    }),
+    cookie: {maxAge: 60000}
   }));
   return app;
 }
